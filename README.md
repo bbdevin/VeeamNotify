@@ -1,6 +1,8 @@
 
 # VeeamNotify
 
+![{13A74740-2515-4007-94F4-6A0488779A14}](https://github.com/user-attachments/assets/e7b00ba8-4347-42f2-924d-ece0102594a5)
+
 VeeamNotify now supports sending Veeam Backup & Replication session summary notifications to **Mattermost**! Configure your `config.json` with a Mattermost Webhook URL to receive detailed backup job results and status updates in your Mattermost channel.
 
 ---
@@ -54,6 +56,14 @@ The notification will also include any additional fields or details relevant to 
 
 ## Installation
 
+1. Place the entire project in the directory `C:\VeeamScripts\VeeamNotify`.
+2. In the Veeam Backup & Replication job settings, configure the post-job script with the following command:
+
+   ```plaintext
+   Powershell.exe -File C:\VeeamScripts\VeeamNotify\Bootstrap.ps1
+   ```
+
+3. Edit the `config.json` file located in `C:\VeeamScripts\VeeamNotify\config` to configure notification services and webhook URLs.
 ### Requirements:
 * Veeam Backup & Replication 11 or higher.
 * PowerShell 5.1 or higher.
