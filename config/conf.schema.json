@@ -52,12 +52,22 @@
                         }
                     }
                 }
+                ,
+                "mattermost": {
+                    "type": "object",
+                    "properties": {
+                        "webhook": {
+                            "type": "string"
+                        }
+                    }
+                }
             },
             "required": [
                 "discord",
                 "slack",
                 "teams",
-                "telegram"
+                "telegram",
+                "mattermost"
             ]
         },
         "mentions": {

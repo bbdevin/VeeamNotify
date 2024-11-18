@@ -343,13 +343,15 @@ If (-not $NonInteractive) {
 	$servicePrompt_discord = New-Object System.Management.Automation.Host.ChoiceDescription '&Discord', 'Send notifications to Discord.'
 	$servicePrompt_slack = New-Object System.Management.Automation.Host.ChoiceDescription '&Slack', 'Send notifications to Slack.'
 	$servicePrompt_teams = New-Object System.Management.Automation.Host.ChoiceDescription '&Teams', 'Send notifications to Teams.'
+	$servicePrompt_mattermost = New-Object System.Management.Automation.Host.ChoiceDescription '&Mattermost', 'Send notifications to Mattermost.'
 	$servicePrompt_result = $host.UI.PromptForChoice(
 		'Notification Service',
 		'Which service do you wish to send notifications to?',
 		@(
 			$servicePrompt_discord,
 			$servicePrompt_slack,
-			$servicePrompt_teams
+			$servicePrompt_teams,
+			$servicePrompt_mattermost
 		),
 		-1
 	)
@@ -365,6 +367,7 @@ If (-not $NonInteractive) {
 		2 {
 			$config.services.teams.webhook = Read-Host -Prompt $webhookPrompt
 		}
+		3 { $config.services.mattermost.webhook = Read-Host -Prompt $webhookPrompt }
 	}
 
 	$mentionPreference_no = New-Object System.Management.Automation.Host.ChoiceDescription '&No', 'Do not mention me.'

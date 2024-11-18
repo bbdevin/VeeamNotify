@@ -1,5 +1,6 @@
 {
     "services": {
+    
         "discord": {
             "webhook": "DiscordWebhook",
             "user_id": "123456789"
@@ -16,6 +17,9 @@
         "telegram": {
             "bot_token": "TelegramBotToken",
             "chat_id": "TelegramChatID"
+        },
+        "mattermost": {
+            "webhook": "webhookURL"   
         }
     },
     "mentions": {

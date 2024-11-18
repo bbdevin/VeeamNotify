@@ -16,9 +16,9 @@ Function Get-Bottleneck {
 
 	$bottleneck = ($Logger.GetLog() | `
 				Select-Object -ExpandProperty UpdatedRecords | `
-				Where-Object {$_.Title -match 'Primary bottleneck:.*'} | `
-				Select-Object -ExpandProperty Title) `
-		-replace 'Primary bottleneck:',''
+					Where-Object { $_.Title -match 'Primary bottleneck:.*' } | `
+						Select-Object -ExpandProperty Title) `
+		-replace 'Primary bottleneck:', ''
 
 	If ($bottleneck.Length -eq 0) {
 		$bottleneck = 'Undetermined'
@@ -122,19 +122,19 @@ try {
 	## If VM backup/replica, gather and include session info.
 	if ($jobType -in 'Backup', 'Replica') {
 		# Gather session data sizes and timing.
-		[Float]$dataSize 		= $session.BackupStats.DataSize
-		[Float]$transferSize 	= $session.BackupStats.BackupSize
-		[Float]$speed 			= $session.Info.Progress.AvgSpeed
-		$endTime 				= $session.Info.EndTime
-		$startTime 				= $session.Info.CreationTime
-		[string]$dedupRatio 	= $session.BackupStats.DedupRatio
+		[Float]$dataSize = $session.BackupStats.DataSize
+		[Float]$transferSize = $session.BackupStats.BackupSize
+		[Float]$speed = $session.Info.Progress.AvgSpeed
+		$endTime = $session.Info.EndTime
+		$startTime = $session.Info.CreationTime
+		[string]$dedupRatio = $session.BackupStats.DedupRatio
 		[string]$compressRatio	= $session.BackupStats.CompressRatio
-		[string]$bottleneck 	= Get-Bottleneck -Logger $vbrSessionLogger
+		[string]$bottleneck = Get-Bottleneck -Logger $vbrSessionLogger
 
 		# Convert bytes to closest unit.
-		$dataSizeRound 		= ConvertTo-ByteUnit -Data $dataSize
+		$dataSizeRound = ConvertTo-ByteUnit -Data $dataSize
 		$transferSizeRound	= ConvertTo-ByteUnit -Data $transferSize
-		$speedRound 		= (ConvertTo-ByteUnit -Data $speed).ToString() + '/s'
+		$speedRound = (ConvertTo-ByteUnit -Data $speed).ToString() + '/s'
 
 		# Set processing speed "Unknown" if 0B/s to avoid confusion.
 		If ($speedRound -eq '0 B/s') {
@@ -190,16 +190,16 @@ try {
 	If ($jobType -eq 'EpAgentBackup') {
 		# Gather session data sizes and timings.
 		[Float]$processedSize	= $session.Info.Progress.ProcessedSize
-		[Float]$transferSize 	= $session.Info.Progress.TransferedSize
-		[Float]$speed			= $session.Info.Progress.AvgSpeed
-		$endTime				= $session.EndTime
-		$startTime				= $session.CreationTime
-		[string]$bottleneck 	= Get-Bottleneck -Logger $vbrSessionLogger
+		[Float]$transferSize = $session.Info.Progress.TransferedSize
+		[Float]$speed = $session.Info.Progress.AvgSpeed
+		$endTime = $session.EndTime
+		$startTime = $session.CreationTime
+		[string]$bottleneck = Get-Bottleneck -Logger $vbrSessionLogger
 
 		# Convert bytes to closest unit.
 		$processedSizeRound	= ConvertTo-ByteUnit -Data $processedSize
 		$transferSizeRound	= ConvertTo-ByteUnit -Data $transferSize
-		$speedRound 		= (ConvertTo-ByteUnit -Data $speed).ToString() + '/s'
+		$speedRound = (ConvertTo-ByteUnit -Data $speed).ToString() + '/s'
 
 		# Set processing speed "Unknown" if 0B/s to avoid confusion.
 		If ($speedRound -eq '0 B/s') {
@@ -375,8 +375,14 @@ try {
 					$uri = $service.Value.webhook
 
 					Try {
-						New-Payload -Service $service.Name -Parameters $payloadParams | Send-Payload -Uri $uri -JSONPayload $true | Out-Null
-
+						If ($serviceName -eq 'Mattermost') {
+							$payload = New-MattermostPayload -JobName $jobName -Status $status -Duration $durationFormatted -JobType $jobType -DataSize $dataSize -TransferSize $transferSize -ProcessedSize $processedSize -Speed $speed -Bottleneck $bottleneck -StartTime $startTime -EndTime $endTime -FooterMessage $footerMessage -Mention $mention -UserId $userId
+							$jsonPayload = $payload | ConvertTo-Json -Depth 10 -Compress
+							Invoke-RestMethod -Uri $uri -Method Post -ContentType 'application/json' -Body $jsonPayload
+						}
+						Else {
+							New-Payload -Service $service.Name -Parameters $payloadParams | Send-Payload -Uri $uri -JSONPayload $true | Out-Null
+						}
 						Write-LogMessage -Tag 'INFO' -Message "Notification sent to $serviceName successfully."
 						$vbrSessionLogger.UpdateSuccess($logId_service, "[VeeamNotify] Sent notification to $($serviceName).") | Out-Null
 					}

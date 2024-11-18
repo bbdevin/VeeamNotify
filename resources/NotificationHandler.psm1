@@ -2,11 +2,11 @@ function New-Payload {
 	[CmdletBinding()]
 	[OutputType([System.Collections.Hashtable])]
 	param (
-		[Parameter(Mandatory=$true)]
-		[ValidateSet('Discord', 'Slack', 'Teams', 'Telegram')]
+		[Parameter(Mandatory = $true)]
+		[ValidateSet('Discord', 'Slack', 'Teams', 'Telegram', 'Mattermost')]
 		[string]$Service,
 
-		[Parameter(Mandatory=$true)]
+		[Parameter(Mandatory = $true)]
 		[Hashtable]$Parameters
 	)
 
@@ -23,6 +23,9 @@ function New-Payload {
 		'Telegram' {
 			New-TelegramPayload @Parameters
 		}
+		'Mattermost' {
+			New-MattermostPayload @Parameters
+		}		
 		Default {
 			Write-LogMessage -Tag 'ERROR' -Message "Unknown service: $Service"
 		}
@@ -710,7 +713,7 @@ function New-TelegramPayload {
 	# Mention user if configured to do so.
 	# Must be done at early stage to ensure this section is at the top of the embed object.
 	If ($mention) {
-		$message =  "[$UserName](tg://user?id=$UserId) Job $($Status.ToLower())!`n"
+		$message = "[$UserName](tg://user?id=$UserId) Job $($Status.ToLower())!`n"
 	}
 	else {
 		$message = ''
@@ -768,17 +771,82 @@ function New-TelegramPayload {
 
 	return $message
 }
+function New-MattermostPayload {
+	param (
+		[string]$JobName,
+		[string]$JobType,
+		[string]$Status,
+		[double]$DataSize,
+		[double]$TransferSize,
+		[double]$ProcessedSize,
+		[string]$Duration,
+		[string]$Speed,
+		[string]$Bottleneck,
+		[DateTime]$StartTime,
+		[DateTime]$EndTime,
+		[string]$FooterMessage,
+		[boolean]$Mention = $false,
+		[string]$UserId
+	)
+
+	$newline = [Environment]::NewLine  # 使用系統換行符
+	$formattedDataSize = '{0:N2} GB' -f ($DataSize / 1GB)
+	$formattedTransferSize = '{0:N2} GB' -f ($TransferSize / 1GB)
+	$formattedProcessedSize = '{0:N2} GB' -f ($ProcessedSize / 1GB)
+	switch ($Status.ToLower()) {
+		'success' { $color = '#36a64f' }  # 綠色
+		'failure' { $color = '#ff0000' }  # 紅色
+		'warning' { $color = '#ffa500' }  # 橙色 (可選)
+		default { $color = '#808080' }  # 灰色，其他情況
+	}
+
+	# 建構訊息主體
+	$message = "**Status:** $Status" + $newline + $newline
+	$message += "**Job Type:** $JobType" + $newline
+	$message += "**Data Size:** $formattedDataSize" + $newline
+	$message += "**Transferred Data:** $formattedTransferSize" + $newline
+	$message += "**Processed Size:** $formattedProcessedSize" + $newline
+	$message += "**Duration:** $Duration" + $newline
+	$message += "**Start Time:** $($StartTime.ToString('yyyy-MM-dd HH:mm:ss'))" + $newline
+	$message += "**End Time:** $($EndTime.ToString('yyyy-MM-dd HH:mm:ss'))" + $newline
+	$message += "_$FooterMessage_"
+	if ($Mention -and $UserId) {
+		$message = "<@$UserId> " + $message
+	}
+
+	# 建構 Mattermost 附件格式
+	return @{
+		attachments = @(
+			@{
+				fallback    = 'Backup Job Report'
+				author_name = 'Veeam Backup'
+				author_icon = 'https://raw.githubusercontent.com/tigattack/VeeamDiscordNotifications/master/asset/thumb01.png'
+				title       = "**Veeam Job: $JobName**"
+				color       = $color
+				text        = $message
+				footer      = $FooterMessage
+			}
+		)
+	}
+}
+
 
 function Send-Payload {
 	[CmdletBinding()]
 	param (
-		[Parameter(ValueFromPipeline,Mandatory=$true)]
+		[Parameter(ValueFromPipeline, Mandatory = $true)]
 		$Payload,
 		$Uri,
 		$JSONPayload = $false
 	)
 
 	process {
+
+		if ($Service -eq 'Mattermost') {
+			$JSONPayload = $true
+		}
+
+
 		# Build post parameters
 		if ($JSONPayload) {
 			$postParams = @{
