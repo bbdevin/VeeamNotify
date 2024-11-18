@@ -68,7 +68,6 @@ The notification will also include any additional fields or details relevant to 
 * Veeam Backup & Replication 11 or higher.
 * PowerShell 5.1 or higher.
 
-For installation instructions, refer to the [How to Install](https://github.com/tigattack/VeeamNotify/wiki/%F0%9F%94%A7-How-to-Install) wiki page.
 
 ---
 
